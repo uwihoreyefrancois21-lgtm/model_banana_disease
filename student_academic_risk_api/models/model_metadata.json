@@ -1,0 +1,30 @@
+{
+  "model_name": "Logistic Regression",
+  "selection_metric": "mean 5-fold macro F1 (from notebook cross-validation)",
+  "random_state": 42,
+  "train_test_split": {
+    "test_size": 0.2,
+    "stratify": true
+  },
+  "numeric_features": [
+    "Age",
+    "Study_Hours_Per_Week",
+    "Attendance_Percent",
+    "Previous_Average_Score",
+    "Assignment_Score",
+    "Commute_Minutes",
+    "Missed_Deadlines"
+  ],
+  "categorical_features": [
+    "Gender",
+    "Program",
+    "Internet_Access",
+    "Part_Time_Work",
+    "Financial_Stress"
+  ],
+  "preprocessing": "median/mode imputation, StandardScaler, OneHotEncoder(handle_unknown='ignore')",
+  "target_classes": [
+    "At_Risk",
+    "Not_At_Risk"
+  ]
+}

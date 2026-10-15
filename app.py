@@ -5,7 +5,7 @@ from pathlib import Path
 
 import numpy as np
 from PIL import Image
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 import tensorflow as tf
 from tensorflow import keras
@@ -115,13 +115,8 @@ def is_banana_leaf(arr, probs):
     return True, info
 
 
-FRONTEND_PATH = BASE_DIR / "banana_leaf_ai_frontend.html"
-
-
 @app.route("/", methods=["GET"])
 def index():
-    if FRONTEND_PATH.is_file():
-        return send_file(str(FRONTEND_PATH))
     return jsonify({
         "status": "ok",
         "model": MODEL_PATH.name,

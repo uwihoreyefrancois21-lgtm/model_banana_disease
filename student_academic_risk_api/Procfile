@@ -1,0 +1,2 @@
+# Deploy from repo root instead (one URL for both APIs):
+# web: gunicorn -c gunicorn.conf.py host_app:app
