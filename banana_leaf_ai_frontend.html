@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Banana Leaf AI Classifier</title>
+<style>
+:root{--green:#176b45;--green2:#eaf6ef;--ink:#17251e;--muted:#65736b;--line:#dfe8e2;--bg:#f5f8f6}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Inter,Segoe UI,Arial,sans-serif;color:var(--ink)}
+header{background:linear-gradient(120deg,#104d34,#218454);color:#fff;padding:28px 20px}
+.wrap{max-width:1050px;margin:auto}header .eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:2px;opacity:.8;font-weight:700}
+h1{font-size:clamp(27px,4vw,40px);margin:8px 0}header p{margin:0;color:#e0f2e7;max-width:650px;line-height:1.6}
+main{max-width:1050px;margin:26px auto;padding:0 16px 40px}.layout{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 8px 26px #123b1a0a}
+h2{font-size:19px;margin:0 0 8px}.sub{font-size:14px;color:var(--muted);line-height:1.5;margin:0 0 18px}
+.drop{border:2px dashed #a8cbb5;border-radius:14px;min-height:270px;display:flex;align-items:center;justify-content:center;text-align:center;padding:18px;background:#fbfefc;overflow:hidden}
+.drop img{max-width:100%;max-height:330px;object-fit:contain;border-radius:10px}.upload-icon{font-size:40px;color:var(--green);margin-bottom:8px}.drop strong{display:block;margin-bottom:6px}.drop small{color:var(--muted)}
+input[type=file]{display:none}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:15px}
+button,.filebtn{border:0;border-radius:10px;padding:12px 17px;font-size:14px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+.primary{background:var(--green);color:white}.secondary,.filebtn{background:var(--green2);color:var(--green)}button:disabled{opacity:.55;cursor:not-allowed}
+.status{margin-top:12px;color:var(--muted);font-size:13px;min-height:20px}.result-empty{min-height:320px;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted);line-height:1.6}
+.result-top{background:var(--green2);border-radius:12px;padding:16px;margin:0 0 18px}.result-top .label{font-size:12px;color:var(--green);text-transform:uppercase;letter-spacing:1px;font-weight:800}.result-top .prediction{font-size:26px;font-weight:800;margin:6px 0}.confidence{font-size:14px;color:#3d5948}
+.result-top.rejected{background:#fdecec;border:1px solid #f3c2c2}.result-top.rejected .label{color:#b23b3b}.result-top.rejected .prediction{color:#8a2c2c}.rejected-note{margin-top:10px;font-size:13px;color:#8a2c2c;line-height:1.5}
+.class-row{margin:15px 0}.class-meta{display:flex;justify-content:space-between;gap:10px;font-size:14px;margin-bottom:7px}.track{height:9px;background:#edf1ee;border-radius:99px;overflow:hidden}.bar{height:100%;width:0;background:var(--green);border-radius:99px;transition:width .35s}
+.note{font-size:12px;color:var(--muted);line-height:1.5;margin-top:20px;padding-top:14px;border-top:1px solid var(--line)}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:0 15px 24px}
+@media(max-width:760px){.layout{grid-template-columns:1fr}header{padding:24px 17px}.card{padding:18px}.drop{min-height:220px}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><div class="eyebrow">Computer Vision • MobileNetV2</div><h1>Banana Leaf AI Classifier</h1><p>Upload a banana leaf photo to check which of the four classes your trained AI model predicts.</p></div></header>
+<main><div class="layout">
+<section class="card">
+<h2>Upload a leaf image</h2><p class="sub">Use a clear JPG, JPEG, or PNG photo of one banana leaf.</p>
+<label class="drop" id="drop" for="imageInput">
+<div id="placeholder"><div class="upload-icon">＋</div><strong>Choose an image</strong><small>Click here to browse your device</small></div>
+<img id="preview" alt="Selected banana leaf preview" hidden>
+</label>
+<input id="imageInput" type="file" accept="image/png,image/jpeg,.jpg,.jpeg,.png">
+<div class="actions"><label class="filebtn" for="imageInput">Choose image</label><button class="primary" id="checkBtn" disabled>Analyze image</button><button class="secondary" id="resetBtn" type="button">Reset</button></div>
+<div class="status" id="status" role="status"></div>
+</section>
+<section class="card">
+<div id="results" hidden>
+<div class="result-top"><div class="label">Predicted class</div><div class="prediction" id="predicted">—</div><div class="confidence" id="topConfidence">—</div></div>
+<h2 style="font-size:15px">Class confidence</h2>
+<div id="classScores"></div>
+<div class="note">Confidence scores are model estimates, not a guarantee of diagnosis. For important decisions, confirm with a qualified agricultural expert.</div>
+</div>
+</section></div></main>
+<footer>Banana Leaf Classification • Classes: cordana, healthy, pestalotiopsis, sigatoka</footer>
+<script>
+const API_URL = "/predict";
+const CLASSES = ["cordana", "healthy", "pestalotiopsis", "sigatoka"];
+const input = document.getElementById("imageInput");
+const preview = document.getElementById("preview");
+const placeholder = document.getElementById("placeholder");
+const checkBtn = document.getElementById("checkBtn");
+const statusEl = document.getElementById("status");
+let selectedFile = null;
+input.addEventListener("change", () => {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  if (!/^image\/(jpeg|png)$/.test(file.type)) { statusEl.textContent = "Please select a JPG or PNG image."; return; }
+  selectedFile = file;
+  preview.src = URL.createObjectURL(file); preview.hidden = false; placeholder.hidden = true;
+  checkBtn.disabled = false; statusEl.textContent = "";
+  document.getElementById("results").hidden = true; document.getElementById("empty").hidden = false;
+});
+checkBtn.addEventListener("click", async () => {
+  if (!selectedFile) return;
+  checkBtn.disabled = true; statusEl.textContent = "Analyzing image…";
+  try {
+    const body = new FormData(); body.append("image", selectedFile);
+    const response = await fetch(API_URL, {method:"POST", body});
+    if (!response.ok) throw new Error("Backend returned HTTP " + response.status);
+    const data = await response.json();
+    const probs = data.probabilities || data.class_probabilities;
+    const predicted = data.predicted_class || data.prediction;
+    if (!probs || !predicted) throw new Error("Unexpected API response. Check the backend response format.");
+    renderResults(predicted, probs, !!data.not_a_leaf);
+    statusEl.textContent = "";
+  } catch (err) {
+    statusEl.textContent = "Could not analyze image: " + err.message + ". Check that the backend is running and API_URL is correct.";
+  } finally { checkBtn.disabled = false; }
+});
+function renderResults(predicted, probabilities, rejected) {
+  document.getElementById("empty").hidden = true;
+  document.getElementById("results").hidden = false;
+  const topBox = document.querySelector(".result-top");
+  const oldNote = topBox.querySelector(".rejected-note");
+  if (oldNote) oldNote.remove();
+  topBox.classList.toggle("rejected", !!rejected);
+  document.getElementById("predicted").textContent = predicted;
+  const scores = CLASSES.map(name => [name, Number(probabilities[name] ?? 0)]);
+  const top = scores.find(x => x[0] === predicted)?.[1] ?? Math.max(...scores.map(x => x[1]));
+  document.getElementById("topConfidence").textContent = "Model confidence: " + (top * 100).toFixed(1) + "%";
+  document.getElementById("classScores").innerHTML = "";
+  scores.sort((a,b) => b[1]-a[1]).forEach(([name, value]) => {
+    const pct = Math.max(0, Math.min(100, value * 100));
+    const row = document.createElement("div"); row.className = "class-row";
+    const meta = document.createElement("div"); meta.className = "class-meta";
+    const label = document.createElement("strong"); label.textContent = name;
+    const percent = document.createElement("span"); percent.textContent = pct.toFixed(1) + "%";
+    meta.append(label, percent);
+    const track = document.createElement("div"); track.className = "track";
+    const bar = document.createElement("div"); bar.className = "bar"; bar.style.width = pct + "%";
+    track.append(bar); row.append(meta, track); document.getElementById("classScores").append(row);
+  });
+  if (rejected) {
+    const note = document.createElement("div");
+    note.className = "rejected-note";
+    note.textContent = "This image does not appear to be a banana leaf. Confidence is set to 0%. Please upload a clear photo of a banana leaf.";
+    topBox.append(note);
+  }
+}
+document.getElementById("resetBtn").addEventListener("click", () => {
+  selectedFile = null; input.value = ""; preview.hidden = true; preview.removeAttribute("src"); placeholder.hidden = false;
+  checkBtn.disabled = true; statusEl.textContent = "";
+  document.getElementById("results").hidden = true; document.getElementById("empty").hidden = false;
+});
+</script>
+</body></html>
