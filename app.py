@@ -7,7 +7,6 @@ Single Render deployment — one repo, one PORT, two APIs:
 Local:  python app.py
 Render: gunicorn -c gunicorn.conf.py app:app
 """
-
 import os
 import sys
 from pathlib import Path
