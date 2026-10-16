@@ -1,6 +1,8 @@
 {
-  "model_name": "Logistic Regression",
-  "selection_metric": "mean 5-fold macro F1 (from notebook cross-validation)",
+  "notebook_reference": "student_academic_risk_kfold_models.ipynb",
+  "notebook_best_model": "Logistic Regression",
+  "deploy_model_file": "student_academicrisk.keras",
+  "preprocessor_file": "student_academicrisk_preprocessor.joblib",
   "random_state": 42,
   "train_test_split": {
     "test_size": 0.2,
@@ -26,5 +28,23 @@
   "target_classes": [
     "At_Risk",
     "Not_At_Risk"
-  ]
+  ],
+  "notebook_baseline_test_metrics": {
+    "accuracy": 0.6841666666666667,
+    "accuracy_display": "68.42%",
+    "precision_macro": 0.6827572109167063,
+    "recall_macro": 0.6841373744619799,
+    "f1_macro": 0.6828608904301112,
+    "f1_macro_display": "68.29%"
+  },
+  "deployed_keras_test_metrics": {
+    "model_name": "Keras Logistic Regression (deployed .keras)",
+    "accuracy": 0.6825,
+    "accuracy_display": "68.25%",
+    "precision_macro": 0.6837815301229936,
+    "recall_macro": 0.6852806671449068,
+    "f1_macro": 0.6821289296741544,
+    "f1_macro_display": "68.21%"
+  },
+  "model_performance_summary": "Held-out test accuracy 68.25% (F1 macro 68.21%)"
 }

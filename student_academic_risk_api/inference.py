@@ -1,23 +1,48 @@
+import json
+
 import joblib
 import numpy as np
+from tensorflow import keras
 
 from . import config
 from .schema import ALLOWED_CATEGORICAL, CATEGORICAL_FEATURES, FEATURE_FIELDS, NUMERIC_FEATURES
 
-_pipeline = None
+_model = None
+_preprocessor = None
+_class_labels = None
 _metadata = config.load_metadata()
 
 
-def get_pipeline():
-    global _pipeline
-    if _pipeline is None:
+def _load_class_labels():
+    global _class_labels
+    if _class_labels is None:
+        if config.LABELS_PATH.is_file():
+            with open(config.LABELS_PATH, "r", encoding="utf-8") as handle:
+                _class_labels = json.load(handle)
+        else:
+            _class_labels = _metadata.get("target_classes", ["At_Risk", "Not_At_Risk"])
+    return _class_labels
+
+
+def get_model_bundle():
+    global _model, _preprocessor
+    if _model is None:
         if not config.MODEL_PATH.is_file():
             raise FileNotFoundError(
-                f"Model artifact not found at {config.MODEL_PATH}. "
-                "Run scripts/export_model.py once (see README) to create it from the notebook workflow."
+                f"Model not found: {config.MODEL_PATH}. "
+                "Run: python student_academic_risk_api/scripts/export_model.py --data dataset/student_academic_risk_dataset.csv"
             )
-        _pipeline = joblib.load(config.MODEL_PATH)
-    return _pipeline
+        if not config.PREPROCESSOR_PATH.is_file():
+            raise FileNotFoundError(f"Preprocessor not found: {config.PREPROCESSOR_PATH}")
+        _model = keras.models.load_model(config.MODEL_PATH)
+        _preprocessor = joblib.load(config.PREPROCESSOR_PATH)
+    return _model, _preprocessor
+
+
+def get_pipeline():
+    """Health-check compatibility alias."""
+    get_model_bundle()
+    return _model
 
 
 def validate_payload(data):
@@ -65,17 +90,21 @@ def predict_from_features(data):
 
     row = [cleaned[key] for key in FEATURE_FIELDS]
     features = np.array([row], dtype=object)
-    pipeline = get_pipeline()
-    predicted = pipeline.predict(features)[0]
-    probabilities = {}
-    if hasattr(pipeline, "predict_proba"):
-        proba = pipeline.predict_proba(features)[0]
-        classes = list(pipeline.classes_)
-        probabilities = {label: float(proba[i]) for i, label in enumerate(classes)}
+    model, preprocessor = get_model_bundle()
+    x = preprocessor.transform(features)
+    proba = model.predict(x, verbose=0)[0]
+    classes = _load_class_labels()
+    probabilities = {str(classes[i]): float(proba[i]) for i in range(len(classes))}
+    predicted_idx = int(np.argmax(proba))
+    predicted_class = str(classes[predicted_idx])
 
+    perf = _metadata.get("deployed_keras_test_metrics", {})
     return {
-        "predicted_class": str(predicted),
-        "prediction": str(predicted),
+        "predicted_class": predicted_class,
+        "prediction": predicted_class,
         "probabilities": probabilities,
-        "model_name": _metadata.get("model_name", "Logistic Regression"),
+        "model_file": config.MODEL_PATH.name,
+        "model_name": perf.get("model_name", "Keras MLP (deployed)"),
+        "model_accuracy_display": perf.get("accuracy_display"),
+        "model_f1_macro_display": perf.get("f1_macro_display"),
     }, None, 200

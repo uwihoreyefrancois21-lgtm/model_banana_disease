@@ -1,6 +1,42 @@
 # Banana Leaf Disease API — Documentation
 
-Base URL examples: `http://localhost:5000` (local) or `https://your-banana-api.example.com` (hosted).
+## Model (deployed)
+
+| Item | Value |
+|------|--------|
+| **Weights file** | `banana_leaf_disease_api/models/banana_leaf_mobilenetv2.keras` |
+| **Class labels** | `banana_leaf_disease_api/models/class_names.json` |
+| **Architecture** | MobileNetV2 fine-tuned classifier (4-class softmax) |
+| **Training source** | `banana_disease.ipynb` |
+| **Input** | RGB image, resized to 224×224 |
+| **Preprocessing** | `tensorflow.keras.applications.mobilenet_v2.preprocess_input` |
+| **Classes** | `cordana`, `healthy`, `pestalotiopsis`, `sigatoka` |
+| **Inference engine** | TensorFlow Keras (`keras.models.load_model`) |
+
+Optional env overrides:
+
+| Variable | Default |
+|----------|---------|
+| `BANANA_MODEL_PATH` | `models/banana_leaf_mobilenetv2.keras` |
+| `BANANA_CLASS_NAMES_PATH` | `models/class_names.json` |
+| `BANANA_USE_TTA` | `true` (average 4 flip/rotate views) |
+
+---
+
+## Base URLs
+
+**Production (single site — recommended):**
+
+- Base: `https://your-app.example.com/banana`
+- Health: `GET https://your-app.example.com/banana/health`
+- Predict: `POST https://your-app.example.com/banana/predict`
+
+Start from repo root: `gunicorn -c gunicorn.conf.py host_app:app`
+
+**Local standalone (optional):**
+
+- Base: `http://127.0.0.1:5000`
+- Run: `python banana_leaf_disease_api/app.py`
 
 CORS is enabled for browser frontends on another origin.
 
@@ -8,7 +44,9 @@ CORS is enabled for browser frontends on another origin.
 
 ## Endpoints
 
-### `GET /health`
+Paths below use `{base}` = `/banana` when hosted, or `` (empty) when running standalone on port 5000.
+
+### `GET {base}/health`
 
 **Response 200**
 
@@ -18,9 +56,7 @@ CORS is enabled for browser frontends on another origin.
 
 ---
 
-### `GET /` and `GET /api`
-
-Service metadata.
+### `GET {base}/` and `GET {base}/api`
 
 **Response 200**
 
@@ -33,18 +69,19 @@ Service metadata.
   "image_size": [224, 224],
   "preprocessing": "MobileNetV2 preprocess_input on uint8 RGB 224x224",
   "tta": true,
+  "base_path": "/banana",
   "endpoints": {
-    "health": "GET /health",
-    "predict": "POST /predict (multipart form field: image)"
+    "health": "GET /banana/health",
+    "predict": "POST /banana/predict (multipart form field: image)"
   }
 }
 ```
 
 ---
 
-### `POST /predict`
+### `POST {base}/predict`
 
-Classify a banana leaf image. Matches notebook training: resize to 224×224, RGB, `mobilenet_v2.preprocess_input`, softmax over four disease classes. When `tta` is enabled, predictions are averaged over the original image and three flipped views (same as production `app.py` logic).
+Runs inference with **`banana_leaf_mobilenetv2.keras`**.
 
 **Content-Type:** `multipart/form-data`
 
@@ -81,7 +118,7 @@ Classify a banana leaf image. Matches notebook training: resize to 224×224, RGB
 }
 ```
 
-**Success 200 — rejected as non-leaf** (heuristic gate; probabilities zeroed)
+**Success 200 — not a leaf** (heuristic check; class probabilities zeroed)
 
 ```json
 {
@@ -93,7 +130,6 @@ Classify a banana leaf image. Matches notebook training: resize to 224×224, RGB
     "pestalotiopsis": 0.0,
     "sigatoka": 0.0
   },
-  "class_probabilities": { "...": 0.0 },
   "not_a_leaf": true,
   "leaf_info": {
     "green_ratio": 0.03,
@@ -108,19 +144,16 @@ Classify a banana leaf image. Matches notebook training: resize to 224×224, RGB
 |--------|------|--------|
 | 400 | `{ "error": "Missing form field 'image'" }` | No file part |
 | 400 | `{ "error": "Empty filename" }` | Empty upload |
-| 400 | `{ "error": "Could not decode image: ..." }` | Invalid/corrupt image |
-| 500 | `{ "error": "Inference failed: ..." }` | Model/runtime failure |
+| 400 | `{ "error": "Could not decode image: ..." }` | Invalid image |
+| 500 | `{ "error": "Inference failed: ..." }` | Missing `.keras` or runtime error |
 
 ---
 
 ## Frontend integration
 
-Point your hosted `banana_leaf_ai_frontend.html` (or any UI) at this API base URL.
-
-**JavaScript (fetch)**
-
 ```javascript
-const API_BASE = "https://your-banana-api.example.com";
+// Combined host (production)
+const API_BASE = "https://your-app.example.com/banana";
 
 async function classifyLeaf(file) {
   const form = new FormData();
@@ -135,33 +168,27 @@ async function classifyLeaf(file) {
   if (!res.ok) throw new Error(data.error || res.statusText);
 
   if (data.not_a_leaf) {
-    console.log("Not a leaf:", data.leaf_info);
-    return;
+    return { ok: false, reason: data.leaf_info };
   }
-
-  console.log("Class:", data.predicted_class, data.probabilities);
+  return { ok: true, class: data.predicted_class, probs: data.probabilities };
 }
 ```
 
 **cURL**
 
 ```bash
-curl -X POST "https://your-banana-api.example.com/predict" \
+curl -X POST "https://your-app.example.com/banana/predict" \
   -F "image=@leaf.jpg"
 ```
-
-**Notes**
-
-- Do not send JSON for image upload; use `FormData` / multipart.
-- Class order matches `class_names.json` and notebook label ids 0–3.
-- Disable TTA on low-memory hosts: set env `BANANA_USE_TTA=false`.
 
 ---
 
 ## Deployment checklist
 
-1. Push the **whole repository** (both API folders); deploy this service from `banana_leaf_disease_api/`.
-2. Ensure `models/banana_leaf_mobilenetv2.keras` is present (Git LFS if needed).
-3. Install `requirements.txt` on the host.
-4. Start with `gunicorn app:app` (or platform-specific WSGI).
-5. Set `PORT` / reverse proxy to HTTPS for browser frontends.
+1. Push the repo; use root **`Procfile`**: `gunicorn -c gunicorn.conf.py host_app:app`
+2. Ship **`banana_leaf_disease_api/models/banana_leaf_mobilenetv2.keras`** (~31 MB; use Git LFS if needed)
+3. Ship **`banana_leaf_disease_api/models/class_names.json`**
+4. Install root **`requirements.txt`** (includes TensorFlow, Flask, gunicorn)
+5. Frontend calls **`/banana/predict`**, not `/predict` at site root
+
+**Verify model path on server:** `GET /banana/api` → `"model": "banana_leaf_mobilenetv2.keras"`

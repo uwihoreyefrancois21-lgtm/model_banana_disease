@@ -5,4 +5,3 @@ __pycache__/
 venv/
 .pytest_cache/
 *.log
-models/academic_risk_pipeline.joblib

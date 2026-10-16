@@ -47,15 +47,28 @@ Root `Procfile` uses the same command. Frontend URLs:
 - `https://your-app.onrender.com/banana/predict`
 - `https://your-app.onrender.com/student/predict`
 
-## Student model artifact
+## Student model artifact (deployed backend uses `.keras`)
+
+The **`/student`** API loads **`student_academic_risk_api/models/student_academicrisk.keras`** (+ preprocessor joblib). Include these files when you push or deploy:
+
+- `student_academicrisk.keras`
+- `student_academicrisk_preprocessor.joblib`
+- `student_academicrisk_labels.json`
+- `model_metadata.json`
+
+Regenerate if needed:
 
 ```bash
 python student_academic_risk_api/scripts/export_model.py --data dataset/student_academic_risk_dataset.csv
 ```
 
-## Docs
+## API documentation
 
-- `banana_leaf_disease_api/API_DOCUMENTATION.md`
-- `student_academic_risk_api/API_DOCUMENTATION.md`
+| Service | Document |
+|---------|----------|
+| Banana leaf disease | [`banana_leaf_disease_api/API_DOCUMENTATION.md`](banana_leaf_disease_api/API_DOCUMENTATION.md) |
+| Student academic risk | [`student_academic_risk_api/API_DOCUMENTATION.md`](student_academic_risk_api/API_DOCUMENTATION.md) |
+
+Hosted paths: `/banana/...` and `/student/...` (see each doc).
 
 Legacy root `app.py` is banana-only API metadata (no bundled HTML frontend).

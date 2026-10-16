@@ -39,6 +39,11 @@ except Exception as e:
 app = Flask(__name__)
 CORS(app)
 
+# Student academic risk (same URL as banana: /student/predict, /student/health)
+from student_academic_risk_api.routes import create_blueprint as create_student_blueprint
+
+app.register_blueprint(create_student_blueprint("/student"))
+
 
 def load_and_preprocess_image(file_bytes):
     img = Image.open(io.BytesIO(file_bytes)).convert("RGB")
@@ -123,6 +128,10 @@ def index():
         "classes": CLASS_NAMES,
         "endpoint": "POST /predict with form field 'image'",
         "tta": USE_TTA,
+        "student_academic_risk": {
+            "health": "GET /student/health",
+            "predict": "POST /student/predict (JSON)",
+        },
     })
 
 

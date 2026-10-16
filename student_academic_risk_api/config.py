@@ -5,7 +5,16 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent
 
 MODEL_PATH = Path(
-    os.environ.get("STUDENT_RISK_MODEL_PATH", BASE_DIR / "models" / "academic_risk_pipeline.joblib")
+    os.environ.get("STUDENT_RISK_MODEL_PATH", BASE_DIR / "models" / "student_academicrisk.keras")
+)
+PREPROCESSOR_PATH = Path(
+    os.environ.get(
+        "STUDENT_RISK_PREPROCESSOR_PATH",
+        BASE_DIR / "models" / "student_academicrisk_preprocessor.joblib",
+    )
+)
+LABELS_PATH = Path(
+    os.environ.get("STUDENT_RISK_LABELS_PATH", BASE_DIR / "models" / "student_academicrisk_labels.json")
 )
 METADATA_PATH = Path(
     os.environ.get("STUDENT_RISK_METADATA_PATH", BASE_DIR / "models" / "model_metadata.json")
