@@ -25,8 +25,26 @@ from student_academic_risk_api.routes import create_blueprint as create_student_
 BANANA_PREFIX = os.environ.get("BANANA_URL_PREFIX", "/banana")
 STUDENT_PREFIX = os.environ.get("STUDENT_URL_PREFIX", "/student")
 
+# "*" (default) allows any browser origin. Set CORS_ORIGINS to a comma separated
+# list to restrict it, e.g. CORS_ORIGINS="https://my-app.vercel.app,http://localhost:5173"
+_raw_origins = os.environ.get("CORS_ORIGINS", "*").strip()
+ALLOWED_ORIGINS = (
+    "*"
+    if _raw_origins in ("", "*")
+    else [origin.strip() for origin in _raw_origins.split(",") if origin.strip()]
+)
+
 app = Flask("ml_combined_api")
-CORS(app)
+
+# Applies to every route, including the OPTIONS preflight browser clients send
+# before a JSON POST.
+CORS(
+    app,
+    origins=ALLOWED_ORIGINS,
+    methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
+    max_age=86400,
+)
 
 app.register_blueprint(create_banana_blueprint(BANANA_PREFIX))
 app.register_blueprint(create_student_blueprint(STUDENT_PREFIX))

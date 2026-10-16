@@ -24,6 +24,19 @@ def _load_class_labels():
     return _class_labels
 
 
+def _warm_up(model, preprocessor):
+    """Best-effort forward pass so the first scored request is not the slow one."""
+    sample = {
+        key: (0.0 if key in NUMERIC_FEATURES else ALLOWED_CATEGORICAL[key][0])
+        for key in FEATURE_FIELDS
+    }
+    row = [sample[key] for key in FEATURE_FIELDS]
+    x = np.asarray(
+        preprocessor.transform(np.array([row], dtype=object)), dtype="float32"
+    )
+    model(x, training=False)
+
+
 def get_model_bundle():
     global _model, _preprocessor
     if _model is None:
@@ -36,6 +49,11 @@ def get_model_bundle():
             raise FileNotFoundError(f"Preprocessor not found: {config.PREPROCESSOR_PATH}")
         _model = keras.models.load_model(config.MODEL_PATH)
         _preprocessor = joblib.load(config.PREPROCESSOR_PATH)
+        try:
+            _warm_up(_model, _preprocessor)
+        except Exception:
+            # Warm-up is an optimisation only; scoring still works without it.
+            pass
     return _model, _preprocessor
 
 
@@ -91,8 +109,11 @@ def predict_from_features(data):
     row = [cleaned[key] for key in FEATURE_FIELDS]
     features = np.array([row], dtype=object)
     model, preprocessor = get_model_bundle()
-    x = preprocessor.transform(features)
-    proba = model.predict(x, verbose=0)[0]
+    x = np.asarray(preprocessor.transform(features), dtype="float32")
+    # A direct forward pass avoids the tf.data/thread-pool machinery behind
+    # model.predict(), which is heavy for a single row and can stall a
+    # single-process deployment.
+    proba = np.asarray(model(x, training=False))[0]
     classes = _load_class_labels()
     probabilities = {str(classes[i]): float(proba[i]) for i in range(len(classes))}
     predicted_idx = int(np.argmax(proba))
