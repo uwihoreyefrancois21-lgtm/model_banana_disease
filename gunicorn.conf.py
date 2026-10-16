@@ -3,6 +3,12 @@ import os
 # TensorFlow sizes its thread pools from the host CPU count, which oversubscribes
 # a small container and can stall inference. The arbiter's environment is
 # inherited by every worker, so pinning it here covers the whole deployment.
+# gunicorn.conf.py
+# gunicorn.conf.py
+bind = "0.0.0.0:10000"
+workers = 1
+threads = 2
+timeout = 120  # Gives TensorFlow plenty of time to boot up without timing out
 os.environ.setdefault("TF_NUM_INTRAOP_THREADS", "1")
 os.environ.setdefault("TF_NUM_INTEROP_THREADS", "1")
 os.environ.setdefault("OMP_NUM_THREADS", "1")
