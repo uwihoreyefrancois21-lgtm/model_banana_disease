@@ -1,11 +1,14 @@
-# Render Web Service — one repo, both APIs on one URL
-# Dashboard can match these values or import this file.
+# One GitHub repo → one Render Web Service → one public URL
 services:
   - type: web
-    name: model-banana-disease
+    name: ml-combined-api
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn --bind 0.0.0.0:$PORT --timeout 120 app:app
+    startCommand: gunicorn -c gunicorn.conf.py app:app
     envVars:
       - key: PYTHON_VERSION
         value: "3.11.9"
+      - key: WEB_CONCURRENCY
+        value: "1"
+      - key: GUNICORN_TIMEOUT
+        value: "120"

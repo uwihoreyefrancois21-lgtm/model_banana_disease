@@ -23,7 +23,7 @@ Same libraries for both apps: Flask, NumPy, scikit-learn, TensorFlow, etc. **Pan
 
 ```bash
 set PORT=8080
-python host_app.py
+python app.py
 ```
 
 - Banana: `http://127.0.0.1:8080/banana/predict`
@@ -36,16 +36,16 @@ cd banana_leaf_disease_api && set PORT=5000 && python app.py
 cd student_academic_risk_api && set PORT=5001 && python app.py
 ```
 
-Hosting gives **one public URL and one `PORT`**. Do not run 5000 + 5001 on the host. Use the combined app:
+**Render (one repo, one Web Service, one `PORT`):** see [`RENDER.md`](RENDER.md).
 
 ```bash
-gunicorn -c gunicorn.conf.py host_app:app
+gunicorn -c gunicorn.conf.py app:app
 ```
 
-Root `Procfile` uses the same command. Frontend URLs:
+Frontend on Render (same host, separate paths):
 
-- `https://your-app.onrender.com/banana/predict`
-- `https://your-app.onrender.com/student/predict`
+- `https://YOUR-SERVICE.onrender.com/banana/predict`
+- `https://YOUR-SERVICE.onrender.com/student/predict`
 
 ## Student model artifact (deployed backend uses `.keras`)
 
@@ -71,4 +71,4 @@ python student_academic_risk_api/scripts/export_model.py --data dataset/student_
 
 Hosted paths: `/banana/...` and `/student/...` (see each doc).
 
-Legacy root `app.py` is banana-only API metadata (no bundled HTML frontend).
+Root **`app.py`** is the combined entry (same as `host_app.py` for Gunicorn).
