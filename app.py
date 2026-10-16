@@ -1,7 +1,7 @@
 """
 Single Render deployment — one repo, one PORT, two APIs:
 
-  /banana/predict   → banana_leaf_mobilenetv2.keras
+  /banana/predict   → banana_leaf_mobilenetv2.tflite
   /student/predict  → student_academicrisk.keras
 
 Local:  python app.py
@@ -56,7 +56,7 @@ def index():
             "status": "ok",
             "message": "One service, one port — consume each model on its own path",
             "banana_leaf_disease": {
-                "model": "banana_leaf_mobilenetv2.keras",
+                "model": "banana_leaf_mobilenetv2.tflite",
                 "base": BANANA_PREFIX,
                 "health": f"{BANANA_PREFIX}/health",
                 "predict": f"{BANANA_PREFIX}/predict",

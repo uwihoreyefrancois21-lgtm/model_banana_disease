@@ -6,7 +6,7 @@ Part of the **single root repository** (`requirements.txt` at repo root). Standa
 
 - `app.py` — HTTP routes (no bundled frontend)
 - `inference.py` — 224×224 RGB preprocessing, MobileNetV2 `preprocess_input`, optional TTA, leaf sanity checks
-- `models/banana_leaf_mobilenetv2.keras` — trained weights
+- `models/banana_leaf_mobilenetv2.tflite` — trained weights (TFLite build of the Keras model)
 - `models/class_names.json` — `["cordana", "healthy", "pestalotiopsis", "sigatoka"]`
 
 ## Local setup (after clone)
@@ -34,7 +34,7 @@ gunicorn --bind 0.0.0.0:5000 app:app
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `BANANA_MODEL_PATH` | `models/banana_leaf_mobilenetv2.keras` | Model file |
+| `BANANA_MODEL_PATH` | `models/banana_leaf_mobilenetv2.keras` | Base model path; `.tflite` is loaded from the same stem |
 | `BANANA_CLASS_NAMES_PATH` | `models/class_names.json` | Class label order |
 | `BANANA_USE_TTA` | `false` | Average predictions over 4 flip/rotate views (4× slower) |
 | `HOST` | `0.0.0.0` | Bind address |

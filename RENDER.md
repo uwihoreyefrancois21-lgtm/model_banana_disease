@@ -14,7 +14,7 @@
 
 4. Ensure model files are in the repo:
 
-   - `banana_leaf_disease_api/models/banana_leaf_mobilenetv2.keras`
+   - `banana_leaf_disease_api/models/banana_leaf_mobilenetv2.tflite`
    - `banana_leaf_disease_api/models/class_names.json`
    - `student_academic_risk_api/models/student_academicrisk.keras`
    - `student_academic_risk_api/models/student_academicrisk_preprocessor.joblib`

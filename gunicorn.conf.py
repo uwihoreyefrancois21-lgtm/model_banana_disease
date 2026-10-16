@@ -3,18 +3,14 @@ import os
 # TensorFlow sizes its thread pools from the host CPU count, which oversubscribes
 # a small container and can stall inference. The arbiter's environment is
 # inherited by every worker, so pinning it here covers the whole deployment.
-# gunicorn.conf.py
-# gunicorn.conf.py
-bind = "0.0.0.0:10000"
-workers = 1
-threads = 2
-timeout = 120  # Gives TensorFlow plenty of time to boot up without timing out
+# These must land before TensorFlow is imported, i.e. before the app module.
 os.environ.setdefault("TF_NUM_INTRAOP_THREADS", "1")
 os.environ.setdefault("TF_NUM_INTEROP_THREADS", "1")
 os.environ.setdefault("OMP_NUM_THREADS", "1")
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
 os.environ.setdefault("MALLOC_ARENA_MAX", "2")
 
+# Render injects PORT; 8080 keeps local runs working.
 bind = f"0.0.0.0:{os.environ.get('PORT', '8080')}"
 
 # TensorFlow inference is not safe under gthread workers: a single stalled
@@ -24,6 +20,9 @@ bind = f"0.0.0.0:{os.environ.get('PORT', '8080')}"
 worker_class = os.environ.get("GUNICORN_WORKER_CLASS", "sync")
 workers = int(os.environ.get("WEB_CONCURRENCY", "1"))
 threads = int(os.environ.get("GUNICORN_THREADS", "1"))
+
+# A sync worker is killed when a single request exceeds `timeout`, so this must
+# stay above the slowest cold inference on a small instance.
 timeout = int(os.environ.get("GUNICORN_TIMEOUT", "180"))
 graceful_timeout = 30
 keepalive = 5

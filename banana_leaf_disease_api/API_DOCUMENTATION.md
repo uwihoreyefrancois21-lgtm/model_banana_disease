@@ -4,20 +4,20 @@
 
 | Item | Value |
 |------|--------|
-| **Weights file** | `banana_leaf_disease_api/models/banana_leaf_mobilenetv2.keras` |
+| **Weights file** | `banana_leaf_disease_api/models/banana_leaf_mobilenetv2.tflite` |
 | **Class labels** | `banana_leaf_disease_api/models/class_names.json` |
 | **Architecture** | MobileNetV2 fine-tuned classifier (4-class softmax) |
 | **Training source** | `banana_disease.ipynb` |
 | **Input** | RGB image, resized to 224×224 |
 | **Preprocessing** | `tensorflow.keras.applications.mobilenet_v2.preprocess_input` |
 | **Classes** | `cordana`, `healthy`, `pestalotiopsis`, `sigatoka` |
-| **Inference engine** | TensorFlow Keras (`keras.models.load_model`) |
+| **Inference engine** | TensorFlow Lite (`tf.lite.Interpreter`) |
 
 Optional env overrides:
 
 | Variable | Default |
 |----------|---------|
-| `BANANA_MODEL_PATH` | `models/banana_leaf_mobilenetv2.keras` |
+| `BANANA_MODEL_PATH` | `models/banana_leaf_mobilenetv2.keras` (base path; the `.tflite` is loaded from the same stem) |
 | `BANANA_CLASS_NAMES_PATH` | `models/class_names.json` |
 | `BANANA_USE_TTA` | `false` (average 4 flip/rotate views when enabled; 4× slower) |
 
@@ -64,7 +64,7 @@ Paths below use `{base}` = `/banana` when hosted, or `` (empty) when running sta
 {
   "service": "banana-leaf-disease-api",
   "status": "ok",
-  "model": "banana_leaf_mobilenetv2.keras",
+  "model": "banana_leaf_mobilenetv2.tflite",
   "classes": ["cordana", "healthy", "pestalotiopsis", "sigatoka"],
   "image_size": [224, 224],
   "preprocessing": "MobileNetV2 preprocess_input on uint8 RGB 224x224",
@@ -81,7 +81,7 @@ Paths below use `{base}` = `/banana` when hosted, or `` (empty) when running sta
 
 ### `POST {base}/predict`
 
-Runs inference with **`banana_leaf_mobilenetv2.keras`**.
+Runs inference with **`banana_leaf_mobilenetv2.tflite`**.
 
 **Content-Type:** `multipart/form-data`
 
@@ -145,7 +145,7 @@ Runs inference with **`banana_leaf_mobilenetv2.keras`**.
 | 400 | `{ "error": "Missing form field 'image'" }` | No file part |
 | 400 | `{ "error": "Empty filename" }` | Empty upload |
 | 400 | `{ "error": "Could not decode image: ..." }` | Invalid image |
-| 500 | `{ "error": "Inference failed: ..." }` | Missing `.keras` or runtime error |
+| 500 | `{ "error": "Inference failed: ..." }` | Missing `.tflite` or runtime error |
 
 ---
 
@@ -186,9 +186,9 @@ curl -X POST "https://your-app.example.com/banana/predict" \
 ## Deployment checklist
 
 1. Push the repo; use root **`Procfile`**: `gunicorn -c gunicorn.conf.py host_app:app`
-2. Ship **`banana_leaf_disease_api/models/banana_leaf_mobilenetv2.keras`** (~31 MB; use Git LFS if needed)
+2. Ship **`banana_leaf_disease_api/models/banana_leaf_mobilenetv2.tflite`** (~10 MB)
 3. Ship **`banana_leaf_disease_api/models/class_names.json`**
 4. Install root **`requirements.txt`** (includes TensorFlow, Flask, gunicorn)
 5. Frontend calls **`/banana/predict`**, not `/predict` at site root
 
-**Verify model path on server:** `GET /banana/api` → `"model": "banana_leaf_mobilenetv2.keras"`
+**Verify model path on server:** `GET /banana/api` → `"model": "banana_leaf_mobilenetv2.tflite"`
