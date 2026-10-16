@@ -19,7 +19,7 @@ Optional env overrides:
 |----------|---------|
 | `BANANA_MODEL_PATH` | `models/banana_leaf_mobilenetv2.keras` |
 | `BANANA_CLASS_NAMES_PATH` | `models/class_names.json` |
-| `BANANA_USE_TTA` | `true` (average 4 flip/rotate views) |
+| `BANANA_USE_TTA` | `false` (average 4 flip/rotate views when enabled; 4× slower) |
 
 ---
 
@@ -68,7 +68,7 @@ Paths below use `{base}` = `/banana` when hosted, or `` (empty) when running sta
   "classes": ["cordana", "healthy", "pestalotiopsis", "sigatoka"],
   "image_size": [224, 224],
   "preprocessing": "MobileNetV2 preprocess_input on uint8 RGB 224x224",
-  "tta": true,
+  "tta": false,
   "base_path": "/banana",
   "endpoints": {
     "health": "GET /banana/health",

@@ -36,7 +36,7 @@ gunicorn --bind 0.0.0.0:5000 app:app
 |----------|---------|-------------|
 | `BANANA_MODEL_PATH` | `models/banana_leaf_mobilenetv2.keras` | Model file |
 | `BANANA_CLASS_NAMES_PATH` | `models/class_names.json` | Class label order |
-| `BANANA_USE_TTA` | `true` | Average predictions over 4 flip/rotate views |
+| `BANANA_USE_TTA` | `false` | Average predictions over 4 flip/rotate views (4× slower) |
 | `HOST` | `0.0.0.0` | Bind address |
 | `PORT` | `5000` | Port |
 
